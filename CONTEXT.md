@@ -3,6 +3,7 @@
 ## Glossary
 
 ### Binary Management
+- **Binary Invocation**: The act of spawning the `yt-dlp` executable as a child process, collecting its standard output and error streams, and capturing its exit code. Encapsulated in the `exec.ts` module.
 - **External Binary**: The `yt-dlp` executable is not bundled in the package. The CLI discovers or obtains it at runtime.
 - **User-Local Install**: When `yt-dlp` is missing, the CLI downloads it to a user-local directory (`~/.local/bin/yt-dlp` on Unix, `%LOCALAPPDATA%\yt-dlp\yt-dlp.exe` on Windows) and, with explicit user confirmation, appends that directory to the user's shell RC file to add it to PATH.
 - **System Binary**: A pre-existing `yt-dlp` found on the system PATH. Preferred over downloading.
