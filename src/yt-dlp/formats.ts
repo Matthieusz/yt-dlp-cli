@@ -70,7 +70,6 @@ function pickBestAudio(formats: Format[]): Format | undefined {
 
 function pickBestVideo(formats: Format[]): Format | undefined {
   if (formats.length === 0) return undefined;
-  // Pick the format with highest resolution and largest filesize
   return formats.reduce((best, f) => {
     const bestPixels = parsePixelCount(best.resolution);
     const fPixels = parsePixelCount(f.resolution);

@@ -43,7 +43,6 @@ function errorMessage(err: YtDlpError): string {
 async function main() {
   const args = parseArgs(process.argv);
 
-  // Phase 1: ensure binary
   const s1 = p.spinner();
   s1.start('Checking yt-dlp...');
   const binary = await ensure({ binary: args.binary });
@@ -54,7 +53,6 @@ async function main() {
   }
   s1.stop(green(`✓ Ready (${binary.source})`));
 
-  // Get URL
   let url = args.url;
   if (!url) {
     const prompted = await promptForUrl();
@@ -65,7 +63,6 @@ async function main() {
     url = prompted;
   }
 
-  // Phase 2: fetch metadata
   const s2 = p.spinner();
   s2.start(`Fetching metadata for ${url}...`);
   const info = await fetchInfo(url, { binary: binary.path });
@@ -83,7 +80,6 @@ async function main() {
     console.log(dim(`${mins}:${String(secs).padStart(2, '0')} — ${info.value.type}`));
   }
 
-  // Determine which videos to download
   let entries: VideoInfo[] = [info.value];
 
   if (info.value.type === 'playlist' && info.value.entries) {
@@ -96,7 +92,6 @@ async function main() {
     console.log(`\n${bold(String(entries.length))} videos selected`);
   }
 
-  // Phase 3: format selection
   const firstEntry = entries[0];
   if (!firstEntry || firstEntry.formats.length === 0) {
     console.error(`${red('Error:')} No formats available`);
@@ -128,7 +123,6 @@ async function main() {
     formatId = selected;
   }
 
-  // Phase 4: download
   const formatDesc = formatDescription(formatId, firstEntry.formats);
   console.log(
     `\n${bold('Downloading:')} ${cyan(formatDesc)} → ${dim(args.outputDir)}/\n`,
@@ -192,7 +186,6 @@ async function main() {
     }
   }
 
-  // Batch summary
   if (entries.length > 1) {
     console.log(`\n${formatBatchSummary({ downloaded: successCount, skipped: skipCount, failed: failCount })}`);
   }

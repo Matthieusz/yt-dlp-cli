@@ -84,9 +84,8 @@ export async function downloadVideo(
   let lastProgress: DownloadProgress | null = null;
   let destinationPath = '';
   let lastProgressEmit = 0;
-  const PROGRESS_INTERVAL = 100; // ms between progress callbacks
+  const PROGRESS_INTERVAL = 100;
 
-  // Read stdout line by line for progress
   const reader = (proc.stdout as ReadableStream<Uint8Array>).getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -101,7 +100,6 @@ export async function downloadVideo(
       buffer = lines.pop() ?? '';
 
       for (const line of lines) {
-        // Check for file state
         const fileState = detectFileState(line, destinationPath);
         if (fileState) {
           reader.releaseLock();
@@ -109,13 +107,11 @@ export async function downloadVideo(
           return fileState;
         }
 
-        // Check for destination
         const dest = parseDestinationLine(line);
         if (dest) {
           destinationPath = dest;
         }
 
-        // Parse progress — throttle callbacks to avoid flickering
         const progress = parseProgressLine(line);
         if (progress) {
           lastProgress = progress;
@@ -131,12 +127,10 @@ export async function downloadVideo(
     try { reader.releaseLock(); } catch { /* already released */ }
   }
 
-  // Flush final progress update
   if (lastProgress) {
     opts.onProgress?.(lastProgress);
   }
 
-  // Wait for process to finish
   const exitCode = await proc.exited;
 
   if (exitCode !== 0) {

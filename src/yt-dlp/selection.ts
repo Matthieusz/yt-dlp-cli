@@ -31,7 +31,6 @@ export function resolveFormat(
     return { ok: true, formatId: 'bestvideo+bestaudio/best' };
   }
 
-  // No flags set — caller should use interactive selection
   const fallback = formats[0];
   if (!fallback) {
     return { ok: false, error: err.noFormats('(no formats)') };

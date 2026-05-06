@@ -44,13 +44,11 @@ function buildFormatChoices(
 ): { value: string; label: string }[] {
   const choices: { value: string; label: string }[] = [];
 
-  // Best video + audio — use yt-dlp's native DASH merger
   choices.push({
     value: 'bestvideo+bestaudio/best',
     label: 'Best video + audio (auto-merged)',
   });
 
-  // Best audio only
   const bestAudio = shortcuts.find((f) => f.vcodec === 'none' && f.acodec !== 'none');
   if (bestAudio) {
     const size = bestAudio.filesize
@@ -62,7 +60,6 @@ function buildFormatChoices(
     });
   }
 
-  // Custom drill-down
   if (groups.length > 0) {
     choices.push({
       value: '__custom__',
@@ -110,7 +107,6 @@ export async function promptForPlaylistVideos(
       : undefined,
   }));
 
-  // Use select to ask: download all or pick subset?
   const mode = await p.select<string>({
     message: `${entries.length} videos in playlist:`,
     options: [
@@ -125,7 +121,6 @@ export async function promptForPlaylistVideos(
     return entries;
   }
 
-  // Multiselect for subset
   const indices = await p.multiselect<string>({
     message: 'Select videos to download (space to toggle):',
     options: choices,

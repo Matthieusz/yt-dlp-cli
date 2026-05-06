@@ -13,8 +13,8 @@ describe('groupFormats', () => {
     const result = groupFormats(formats);
 
     expect(result.shortcuts).toHaveLength(2);
-    expect(result.shortcuts[0]!.id).toBe('22'); // best video+audio
-    expect(result.shortcuts[1]!.id).toBe('140'); // best audio
+    expect(result.shortcuts[0]!.id).toBe('22');
+    expect(result.shortcuts[1]!.id).toBe('140');
   });
 
   it('groups video formats by resolution', () => {
@@ -62,7 +62,7 @@ describe('groupFormats', () => {
     const result = groupFormats(formats);
 
     expect(result.shortcuts).toHaveLength(1);
-    expect(result.shortcuts[0]!.id).toBe('140'); // larger filesize
+    expect(result.shortcuts[0]!.id).toBe('140');
     expect(result.groups).toEqual([]);
   });
 });
