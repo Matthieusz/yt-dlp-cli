@@ -22,7 +22,7 @@ export async function fetchInfo(
 ): Promise<InfoResult> {
   const binary = opts?.binary ?? 'yt-dlp';
   const run = opts?.run ?? defaultRun;
-  const args = ['--dump-json', '--no-download', url];
+  const args = ['--dump-single-json', '--no-download', url];
 
   const result = await run(binary, args);
 

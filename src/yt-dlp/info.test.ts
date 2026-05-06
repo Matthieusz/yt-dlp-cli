@@ -55,6 +55,47 @@ describe('fetchInfo', () => {
     }
   });
 
+  it('parses playlist JSON with entries', async () => {
+    const rawJson = JSON.stringify({
+      id: 'PLplXQ2cg9B_qrCVd1J_iId5SvP8Kf_BfS',
+      title: 'Test Playlist',
+      _type: 'playlist',
+      entries: [
+        {
+          id: 'e-ORhEE9VVg',
+          title: 'Taylor Swift - Blank Space',
+          duration: 232,
+          formats: [{ format_id: '140', ext: 'm4a', resolution: 'audio only', vcodec: 'none', acodec: 'mp4a.40.2' }],
+        },
+        {
+          id: 'dQw4w9WgXcQ',
+          title: 'Rick Astley - Never Gonna Give You Up',
+          duration: 212,
+          formats: [{ format_id: '247', ext: 'webm', resolution: '1280x720', vcodec: 'vp9', acodec: 'none' }],
+        },
+      ],
+    });
+    const fakeRun = async (_bin: string, _args: string[]) => ({
+      success: true,
+      stdout: rawJson,
+      stderr: '',
+    });
+
+    const result = await fetchInfo('https://www.youtube.com/playlist?list=PLplXQ2cg9B_qrCVd1J_iId5SvP8Kf_BfS', {
+      binary: '/usr/bin/yt-dlp',
+      run: fakeRun,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.type).toBe('playlist');
+      expect(result.value.entries).toHaveLength(2);
+      expect(result.value.entries![0]!.title).toBe('Taylor Swift - Blank Space');
+      expect(result.value.entries![1]!.title).toBe('Rick Astley - Never Gonna Give You Up');
+      expect(result.value.entries![0]!.formats).toHaveLength(1);
+    }
+  });
+
   it('returns FetchFailed when JSON is invalid', async () => {
     const fakeRun = async (_bin: string, _args: string[]) => ({
       success: true,
