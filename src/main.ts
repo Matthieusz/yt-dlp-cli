@@ -4,6 +4,7 @@ import { fetchInfo } from './yt-dlp/info.ts';
 import { groupFormats, findFormat, describeFormat } from './yt-dlp/formats.ts';
 import { resolveFormat } from './yt-dlp/selection.ts';
 import { downloadVideo } from './yt-dlp/download.ts';
+import { runBatch } from './yt-dlp/batch.ts';
 import {
   formatSingleProgress,
   formatBatchProgress,
@@ -128,66 +129,55 @@ async function main() {
     `\n${bold('Downloading:')} ${cyan(formatDesc)} → ${dim(args.outputDir)}/\n`,
   );
 
-  let successCount = 0;
-  let skipCount = 0;
-  let failCount = 0;
+  const isBatch = entries.length > 1;
 
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i]!;
-    const isBatch = entries.length > 1;
-
-    const s3 = p.spinner();
-    if (isBatch) {
-      s3.start(`[${i + 1}/${entries.length}] ${entry.title}`);
-    } else {
-      s3.start(`Starting download...`);
-    }
-
-    const result = await downloadVideo({
-      binary: binary.path,
-      formatId,
-      outDir: args.outputDir,
-      outTemplate: args.outputTemplate,
+  const batchResult = await runBatch({
+    download: (entryUrl, onProgress) =>
+      downloadVideo({
+        binary: binary.path,
+        formatId,
+        outDir: args.outputDir,
+        outTemplate: args.outputTemplate,
+        url: entryUrl,
+        onProgress,
+      }),
+    entries: entries.map((e) => ({
       url:
         entries.length === 1 && info.value.type === 'video'
           ? url
-          : `https://www.youtube.com/watch?v=${entry.id}`,
-      onProgress: (progress) => {
-        s3.stop();
-        if (isBatch) {
-          logUpdate(formatBatchProgress(i + 1, entries.length, entry.title, progress));
-        } else {
-          logUpdate(formatSingleProgress(progress));
+          : `https://www.youtube.com/watch?v=${e.id}`,
+      title: e.title,
+    })),
+    onProgress: isBatch
+      ? (entry, current, total, progress) => {
+          logUpdate(formatBatchProgress(current, total, entry.title, progress));
         }
-      },
-    });
+      : (_entry, _current, _total, progress) => {
+          logUpdate(formatSingleProgress(progress));
+        },
+    onItemComplete: (_entry, _current, _total, result) => {
+      logUpdate.done();
+      switch (result.tag) {
+        case 'downloaded':
+          console.log(`  ${green('✓ Downloaded')}  ${result.path}`);
+          break;
+        case 'skipped':
+          console.log(`  ${yellow('— Skipped')}    ${result.path} (already exists)`);
+          break;
+        case 'resumed':
+          console.log(
+            `  ${green('↻ Resumed')}    ${result.path} (from ${result.percent}%)`,
+          );
+          break;
+        case 'failed':
+          console.log(`  ${red('✗ Failed')}    ${errorMessage(result.error)}`);
+          break;
+      }
+    },
+  });
 
-    logUpdate.done();
-
-    switch (result.tag) {
-      case 'downloaded':
-        successCount++;
-        console.log(`  ${green('✓ Downloaded')}  ${result.path}`);
-        break;
-      case 'skipped':
-        skipCount++;
-        console.log(`  ${yellow('— Skipped')}    ${result.path} (already exists)`);
-        break;
-      case 'resumed':
-        successCount++;
-        console.log(
-          `  ${green('↻ Resumed')}    ${result.path} (from ${result.percent}%)`,
-        );
-        break;
-      case 'failed':
-        failCount++;
-        console.log(`  ${red('✗ Failed')}    ${errorMessage(result.error)}`);
-        break;
-    }
-  }
-
-  if (entries.length > 1) {
-    console.log(`\n${formatBatchSummary({ downloaded: successCount, skipped: skipCount, failed: failCount })}`);
+  if (isBatch) {
+    console.log(`\n${formatBatchSummary(batchResult)}`);
   }
 }
 

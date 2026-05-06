@@ -14,7 +14,7 @@
 - **Batch Job**: A playlist URL + subset of selected entries + a single shared format applied to all entries.
 - **Format**: A specific audio/video stream combination offered by the host platform. Presented to the user for selection.
 - **Playlist Flow**: When a playlist URL is given, the CLI shows the list of videos for subset selection, then asks for one format to apply to all selected videos.
-- **Resilient Batch**: During a batch download, individual video failures are logged but do not abort the entire job. A summary report is printed at completion.
+- **Resilient Batch**: During a batch download, individual video failures are logged but do not abort the entire job. A summary report is printed at completion. Implemented by the Batch Runner module (`batch.ts`).
 - **Inline Progress**: Download progress renders as a single updating line showing batch position (when applicable), percent, speed, ETA, and current title.
 - **Output Defaults**: Default output directory is `./downloads/`. Default filename template is `%(title)s [%(id)s].%(ext)s`. Customizable via `--output-dir` and `--output-template` flags. No config file support.
 - **Format Selection**: Format picker presents three shortcuts first: `Best quality`, `Best audio only`, and `Custom...`. `Custom...` reveals a grouped-by-resolution list with codec and filesize detail.
