@@ -20,9 +20,4 @@ export type VideoInfo = {
   entries?: VideoInfo[];
 };
 
-export type DownloadJob = {
-  url: string;
-  formatId: string;
-  outDir: string;
-  filenameTemplate: string;
-};
+
