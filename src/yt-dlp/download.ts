@@ -1,58 +1,21 @@
 import type { YtDlpError } from '../errors.ts';
+import {
+  type DownloadProgress,
+  parseOutputLine,
+} from './download-parser.ts';
 
-export type DownloadProgress = {
-  percent: number;
-  totalSize: string;
-  speed: string;
-  eta: string;
-};
+export type { DownloadProgress } from './download-parser.ts';
+export {
+  parseProgressLine,
+  parseDestinationLine,
+  detectFileState,
+} from './download-parser.ts';
 
 export type DownloadResult =
   | { tag: 'downloaded'; path: string }
   | { tag: 'skipped'; path: string }
   | { tag: 'resumed'; path: string; percent: number }
   | { tag: 'failed'; error: YtDlpError };
-
-const PROGRESS_RE = /^\[download\]\s+(\d+\.?\d*)%\s+of\s+(~?\s*[\d.]+[KMG]?i?B)\s+at\s+(.+?)\s+ETA\s+(\S+)/;
-
-export function parseProgressLine(line: string): DownloadProgress | null {
-  const match = line.match(PROGRESS_RE);
-  if (!match?.[1] || !match?.[2] || !match?.[3] || !match?.[4]) return null;
-
-  return {
-    percent: parseFloat(match[1]),
-    totalSize: match[2].trim(),
-    speed: match[3],
-    eta: match[4],
-  };
-}
-
-const DESTINATION_RE = /^\[(?:download|Merger)\].*Destination:\s+(.+)/;
-const MERGER_PATH_RE = /^\[Merger\]\s+Merging formats into\s+"(.+)"/;
-
-export function parseDestinationLine(line: string): string | null {
-  const destMatch = line.match(DESTINATION_RE);
-  if (destMatch?.[1]) return destMatch[1];
-
-  const mergerMatch = line.match(MERGER_PATH_RE);
-  if (mergerMatch?.[1]) return mergerMatch[1];
-
-  return null;
-}
-
-const ALREADY_DOWNLOADED_RE = /^\[download\]\s+(.+?)\s+has already been downloaded/;
-
-export function detectFileState(
-  line: string,
-  defaultPath: string,
-): DownloadResult | null {
-  const match = line.match(ALREADY_DOWNLOADED_RE);
-  if (match?.[1]) {
-    const path = match[1].includes('/') ? match[1] : defaultPath;
-    return { tag: 'skipped', path };
-  }
-  return null;
-}
 
 export type ProgressCallback = (progress: DownloadProgress) => void;
 
@@ -100,26 +63,24 @@ export async function downloadVideo(
       buffer = lines.pop() ?? '';
 
       for (const line of lines) {
-        const fileState = detectFileState(line, destinationPath);
-        if (fileState) {
-          reader.releaseLock();
-          proc.kill();
-          return fileState;
-        }
+        const event = parseOutputLine(line, destinationPath);
 
-        const dest = parseDestinationLine(line);
-        if (dest) {
-          destinationPath = dest;
-        }
-
-        const progress = parseProgressLine(line);
-        if (progress) {
-          lastProgress = progress;
-          const now = Date.now();
-          if (now - lastProgressEmit >= PROGRESS_INTERVAL) {
-            lastProgressEmit = now;
-            opts.onProgress?.(progress);
+        switch (event.tag) {
+          case 'alreadyDownloaded': {
+            reader.releaseLock();
+            proc.kill();
+            return { tag: 'skipped', path: event.path };
           }
+          case 'destination':
+            destinationPath = event.path;
+            break;
+          case 'progress':
+            lastProgress = event.progress;
+            if (Date.now() - lastProgressEmit >= PROGRESS_INTERVAL) {
+              lastProgressEmit = Date.now();
+              opts.onProgress?.(event.progress);
+            }
+            break;
         }
       }
     }

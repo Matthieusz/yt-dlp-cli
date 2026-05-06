@@ -1,7 +1,11 @@
 import * as p from '@clack/prompts';
-import type { Format } from '../types.ts';
+import type { Format, VideoInfo } from '../types.ts';
 import type { FormatGroup } from '../yt-dlp/formats.ts';
-import type { VideoInfo } from '../types.ts';
+import {
+  buildFormatChoices,
+  buildFormatDetailChoices,
+  CUSTOM_FORMAT_SENTINEL,
+} from '../yt-dlp/formats.ts';
 
 export async function promptForUrl(): Promise<string | null> {
   const url = await p.text({
@@ -31,62 +35,17 @@ export async function promptForFormat(
 
   if (p.isCancel(selected)) return null;
 
-  if (selected.startsWith('__custom__')) {
+  if (selected.startsWith(CUSTOM_FORMAT_SENTINEL)) {
     return promptCustomFormat(groups);
   }
 
   return selected;
 }
 
-function buildFormatChoices(
-  shortcuts: Format[],
-  groups: FormatGroup[],
-): { value: string; label: string }[] {
-  const choices: { value: string; label: string }[] = [];
-
-  choices.push({
-    value: 'bestvideo+bestaudio/best',
-    label: 'Best video + audio (auto-merged)',
-  });
-
-  const bestAudio = shortcuts.find((f) => f.vcodec === 'none' && f.acodec !== 'none');
-  if (bestAudio) {
-    const size = bestAudio.filesize
-      ? ` (${(bestAudio.filesize / 1024 / 1024).toFixed(1)} MB)`
-      : '';
-    choices.push({
-      value: 'bestaudio/best',
-      label: `Best audio only — ${bestAudio.acodec}${size}`,
-    });
-  }
-
-  if (groups.length > 0) {
-    choices.push({
-      value: '__custom__',
-      label: 'Custom... (pick from all formats)',
-    });
-  }
-
-  return choices;
-}
-
 async function promptCustomFormat(
   groups: FormatGroup[],
 ): Promise<string | null> {
-  const options: { value: string; label: string }[] = [];
-
-  for (const group of groups) {
-    for (const f of group.formats) {
-      const size = f.filesize
-        ? ` (${(f.filesize / 1024 / 1024).toFixed(1)} MB)`
-        : '';
-      const type = f.acodec === 'none' ? 'V' : f.vcodec === 'none' ? 'A' : 'AV';
-      options.push({
-        value: f.id,
-        label: `[${type}] ${f.resolution} — ${f.ext} ${f.vcodec}+${f.acodec}${size}`,
-      });
-    }
-  }
+  const options = buildFormatDetailChoices(groups);
 
   const selected = await p.select<string>({
     message: 'Select format:',

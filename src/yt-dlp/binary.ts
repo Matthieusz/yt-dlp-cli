@@ -1,5 +1,6 @@
 import { mkdir, chmod } from 'node:fs/promises';
 import type { YtDlpError } from '../errors.ts';
+import { type Runner, run as defaultRun } from './exec.ts';
 
 export type BinaryResult =
   | { ok: true; path: string; source: 'system' | 'downloaded' }
@@ -20,15 +21,7 @@ export async function locate(opts?: LocateOpts): Promise<BinaryResult> {
   return { ok: false, error: { tag: 'BinaryNotFound', checked: ['PATH'] } };
 }
 
-type CmdResult = {
-  success: boolean;
-  stdout: string;
-  stderr: string;
-};
-
-type RunCmd = (bin: string, args: string[]) => Promise<CmdResult>;
-
-type ValidateOpts = { run?: RunCmd };
+type ValidateOpts = { run?: Runner };
 
 export async function validate(
   path: string,
@@ -45,17 +38,6 @@ export async function validate(
     ok: false,
     error: { tag: 'BinaryNotFound', checked: [path] },
   };
-}
-
-async function defaultRun(bin: string, args: string[]): Promise<CmdResult> {
-  const proc = Bun.spawn([bin, ...args], {
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  const exitCode = await proc.exited;
-  return { success: exitCode === 0, stdout, stderr };
 }
 
 type FileSystem = {

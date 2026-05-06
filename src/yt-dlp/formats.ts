@@ -10,6 +10,64 @@ export type FormatPickResult = {
   groups: FormatGroup[];
 };
 
+export const CUSTOM_FORMAT_SENTINEL = '__custom__';
+
+export function buildFormatChoices(
+  shortcuts: Format[],
+  groups: FormatGroup[],
+): { value: string; label: string }[] {
+  const choices: { value: string; label: string }[] = [];
+
+  choices.push({
+    value: 'bestvideo+bestaudio/best',
+    label: 'Best video + audio (auto-merged)',
+  });
+
+  const bestAudio = shortcuts.find(
+    (f) => f.vcodec === 'none' && f.acodec !== 'none',
+  );
+  if (bestAudio) {
+    const size = bestAudio.filesize
+      ? ` (${(bestAudio.filesize / 1024 / 1024).toFixed(1)} MB)`
+      : '';
+    choices.push({
+      value: 'bestaudio/best',
+      label: `Best audio only — ${bestAudio.acodec}${size}`,
+    });
+  }
+
+  if (groups.length > 0) {
+    choices.push({
+      value: CUSTOM_FORMAT_SENTINEL,
+      label: 'Custom... (pick from all formats)',
+    });
+  }
+
+  return choices;
+}
+
+export function buildFormatDetailChoices(
+  groups: FormatGroup[],
+): { value: string; label: string }[] {
+  const options: { value: string; label: string }[] = [];
+
+  for (const group of groups) {
+    for (const f of group.formats) {
+      const size = f.filesize
+        ? ` (${(f.filesize / 1024 / 1024).toFixed(1)} MB)`
+        : '';
+      const type =
+        f.acodec === 'none' ? 'V' : f.vcodec === 'none' ? 'A' : 'AV';
+      options.push({
+        value: f.id,
+        label: `[${type}] ${f.resolution} — ${f.ext} ${f.vcodec}+${f.acodec}${size}`,
+      });
+    }
+  }
+
+  return options;
+}
+
 export function findFormat(formats: Format[], id: string): Format | undefined {
   return formats.find((f) => f.id === id);
 }
