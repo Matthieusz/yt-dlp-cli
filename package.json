@@ -1,0 +1,24 @@
+{
+  "name": "yt-dlp-cli",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "yt-dlp-cli": "src/main.ts"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.3.0",
+    "commander": "^14.0.3",
+    "log-update": "^8.0.0",
+    "yoctocolors": "^2.1.2"
+  }
+}
